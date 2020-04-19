@@ -1,0 +1,12 @@
+*
+
+!**/*.go
+!**/*.md
+!*/
+!.gitignore
+!**/Makefile
+!go.mod
+!go.sum
+!www/*.html
+!www/js/main.js
+!www/css/main.css
