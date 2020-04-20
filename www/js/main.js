@@ -1,163 +1,165 @@
-/* ROUTES */
-var routes = []
-
 /* GLOBAL ACCESS */
-function getDate() {
-	const now = new Date(Date.now())
+function getDate(date) {
+	const now = new Date(date)
 	const hours = now.getHours()
 	const minutes = "0" + now.getMinutes()
-	return hours + ":" + minutes.substr(-2)
+	const seconds = "0" + now.getSeconds()
+	return hours + ":" + minutes.substr(-2) + ":" + seconds.substr(-2)
 }
 
-var teams = [
-	"148.88.1.0/24",
-	"148.88.2.0/24",
-	"148.88.3.0/24",
-	"148.88.4.0/24",
-	"148.88.5.0/24",
-	"148.88.6.0/24",
-	"148.88.7.0/24",
-	"148.88.8.0/24",
-	"148.88.9.0/24",
-]
+/* ROUTER */
+const router = new VueRouter()
 
-// Programatically get teams
+/* vux state */
+const store = new Vuex.Store({
+	state: {
+		teams: [],
+		scoreboardGraph: {},
+		scoreboardGraphLabels: [],
+		hostData: {},
+	},
+	mutations: {
+		setTeams: function(state, newTeams) {
+			state.teams = newTeams
+		},
+		initScoreboardGraph: function(state, newTeams) {
+			newScoreboardGraph = {}
+			for (let index in newTeams) {
+				var newData = {
+					label: newTeams[index],
+					borderColor: '#'+Math.floor(Math.random()*16777215).toString(16),
+					fill: false,
+					data: []
+				}
+				newScoreboardGraph[newTeams[index]] = newData
+			}
 
-// Programmatically add team paths & components to router
-for (let team in teams) {
-	var path = '/team/' + team
-	var component = {
-		template: `
-<div class="col s12">
-	<h4 class="center">{{ team }}</h4>
-	<div v-for="(data, host) in hosts" class="col s12 m6 l4">
-		<div class="card">
-			<div class="card-content black-text">
-				<span class="card-title center">{{ host }}</span>
-				<ul class="collection">
-					<li v-for="(value, key) in ports(data.required_ports, data.open_ports)" :class="{ 'collection-item': true, row: true, active: true, red: value === 'closed', green: value === 'open'}">
-						<div class="col s6 m6 l6">
-							{{ key }}
-						</div>
-						<div class="col s6 m6 l6">
-							<div class="right">
-								{{ value }}
-							</div>
-						</div>
-					</li>
-				</ul>
-			</div>
-		</div>
+			state.scoreboardGraph = newScoreboardGraph
+		},
+		updateScoreboardTeamData: function(state, update) {
+			var teams = update['Teams']
+			for (let index in teams) {
+				let team = teams[index]
+
+				state.scoreboardGraph[team['Team']].data.push(team['Services'])
+			}
+			state.scoreboardGraphLabels.push(getDate(update['Time']))
+		},
+		updateTeamHosts: function(state, update) {
+			let team = update['Team']
+			let hosts = update['Hosts']
+
+			Vue.set(state.hostData, team, hosts)
+		}
+	}
+})
+
+Vue.component('host', {
+	template: `
+<div class="card">
+	<div class="card-content black-text">
+		<span class="card-title center">{{ host }}</span>
+		<ul class="collection">
+			<li v-for="(value, key) in ports" :key="key" :class="{ 'collection-item': true, row: true, active: true, red: value === 'closed', green: value === 'open'}">
+				<div class="col s6 m6 l6">
+					{{ key }}
+				</div>
+				<div class="col s6 m6 l6">
+					<div class="right">
+						{{ value }}
+					</div>
+				</div>
+			</li>
+		</ul>
 	</div>
 </div>
-		`,
-		data: function() {
-			return {
-				team: teams[team],
-				teamID: team,
-				hosts: {
-					"148.88.10.1": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-					"148.88.10.2": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-					"148.88.10.3": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-					"148.88.10.4": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-					"148.88.10.5": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-					"148.88.10.6": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-					"148.88.10.7": {
-						"required_ports": [
-							80,
-							443,
-							8080
-						],
-						"open_ports": [
-							80
-						]
-					},
-				},
-			}
-		},
-		methods: {
-			ports: function(requiredPorts, openPorts) {
-				var data = {}
-				for (requiredPort in requiredPorts) {
-					var found = false
-					for (openPort in openPorts) {
-						if (requiredPorts[requiredPort] === openPorts[openPort]) {
-							found = true
-							data[requiredPorts[requiredPort]] = 'open'
-							break
-						}
-					}
-
-					if (!found) {
-						data[requiredPorts[requiredPort]] = 'closed'
+	`,
+	store: store,
+	props: ['host', 'team'],
+	computed: {
+		ports: function() {
+			var data = {}
+			var hostData = this.$store.state.hostData[this.team][this.host]
+			var requiredPorts = hostData['RequiredPorts']
+			var openPorts = hostData['OpenPorts']
+			for (requiredPortIndex in requiredPorts) {
+				var found = false
+				for (openPortIndex in openPorts) {
+					if (requiredPorts[requiredPortIndex] === openPorts[openPortIndex]) {
+						found = true
+						data[requiredPorts[requiredPortIndex]] = 'open'
+						break
 					}
 				}
 
-				return data
-			},
+				if (!found) {
+					data[requiredPorts[requiredPortIndex]] = 'closed'
+				}
+			}
+
+			return data
 		}
 	}
+})
 
-	var newRoute = {
-		path: path,
-		component: component,
+function generateTeamPage(team) {
+	return {
+		template: `
+<div class="col s12">
+	<h4 class="center">{{ team }}</h4>
+	<div v-for="(ports, host) in hosts" class="col s12 m6 l4">
+		<host :host="host" :team="team"></host>
+	</div>
+</div>
+		`,
+		store: store,
+		data: function() {
+			return {
+				team: team,
+			}
+		},
+		computed: {
+			hosts: function() {
+				return this.$store.state.hostData[this.team]
+			},
+		},
 	}
+}
 
-	routes.push(newRoute)
+// Programatically get teams
+var ws = new WebSocket('ws://' + window.location.host)
+
+ws.onmessage = function(event) {
+	newMessage = JSON.parse(event.data)
+	if (newMessage['Type'] === "teams update") {
+		var newTeams = newMessage['Content']
+		store.commit('setTeams', newTeams)
+		store.commit('initScoreboardGraph', newTeams)
+
+		// add teams pages to router
+		for (var index in newTeams) {
+			var path = '/team/' + index
+			let component = generateTeamPage(newTeams[index])
+			router.addRoutes([{path: path, component: component}])
+		}
+
+		// add 404 page to router
+		const fourohfour = {
+			template: `
+<div class="col s12">
+	<h1 class="center">Page not found!</h1>
+</div>`
+		}
+
+		router.addRoutes([{
+			component: fourohfour,
+			path: '*',
+		}])
+	} else if (newMessage['Type'] === "scoreboard update") {
+		store.commit('updateScoreboardTeamData', newMessage['Content'])
+	} else if (newMessage['Type'] === "hosts update") {
+		store.commit('updateTeamHosts', newMessage['Content'])
+	}
 }
 
 /* PAGES */
@@ -172,26 +174,49 @@ const scoreboard = {
 			graph: undefined
 		}
 	},
-	mounted: function () {
-		var date = getDate()
-		var dataset = []
-		for (let teamIndex in teams) {
-			let newData = {
-				label: teams[teamIndex],
-				borderColor: '#'+Math.floor(Math.random()*16777215).toString(16),
-				fill: false,
-				data: [Math.floor(Math.random()*10),Math.floor(Math.random()*10),Math.floor(Math.random()*10),]
-			}
-			dataset.push(newData)
+	computed: {
+		teams: function() {
+			return store.state.teams
+		},
+		scoreboardGraph: function() {
+			return store.state.scoreboardGraph
+		},
+		scoreboardGraphLabels: function() {
+			return store.state.scoreboardGraphLabels
 		}
+	},
+	watch: {
+		scoreboardGraph: function() {
+			this.updateGraphData()
+		},
+		scoreboardGraphLabels: function() {
+			this.updateGraphData()
+		}
+	},
+	methods: {
+		updateGraphData: function() {
+			for (let team in this.scoreboardGraph) {
+				var found = false
+				for (let index in this.graph.data.datasets) {
+					if (this.graph.data.datasets[index].label === team) {
+						found = true
+						this.graph.data.datasets[index] = this.scoreboardGraph[team]
+					}
+				}
 
+				if (!found) {
+					this.graph.data.datasets.push(this.scoreboardGraph[team])
+				}
+			}
+
+			this.graph.data.labels = this.scoreboardGraphLabels
+			this.graph.update()
+		}
+	},
+	mounted: function () {
 		const elem = document.getElementById('mainTeamComparisonChart')
 		this.graph = new Chart(elem, {
 			type: 'line',
-			data: {
-				labels: [date, "22:30", "23:00"],
-				datasets: dataset,
-			},
 			options: {
 				defaultFontColor: '#fafafa',
 				scales: {
@@ -199,34 +224,34 @@ const scoreboard = {
 						gridLines: {
 							display: false,
 						},
+						ticks: {
+							min: 0,
+						},
+						scaleLabel: {
+							display: true,
+							labelString: "Online Services",
+							fontColor: '#fafafa'
+						}
 					}],
 					xAxes: [{
 						gridLines: {
 							color: '#fafafa',
 							zeroLineColor: '#fafafa'
+						},
+						scaleLabel: {
+							display: true,
+							labelString: "Time",
+							fontColor: '#fafafa'
 						}
 					}]
 				}
 			}
 		})
+		this.updateGraphData()
 	},
 }
 
-routes.push({ path: '/', component: scoreboard, })
-
-const fourohfour = {
-	template: `
-<div class="col s12">
-	<h1 class="center">Page not found!</h1>
-</div>
-`
-}
-
-routes.push({ path: '*', component: fourohfour, })
-/* ROUTER */
-const router = new VueRouter({
-	routes: routes
-})
+router.addRoutes([{ path: '/', component: scoreboard }])
 
 /* GLOBAL COMPONENTS */
 Vue.component('navbar', {
@@ -284,7 +309,22 @@ Vue.component('navbar', {
 </nav>`,
 	data: function() {
 		return {
-			teams: teams
+		}
+	},
+	computed: {
+		teams: function() {
+			return store.state.teams
+		}
+	},
+	watch: {
+		teams: function() {
+			var element = document.getElementById('team-search-input-field')
+			var instance = M.Autocomplete.getInstance(element)
+			var data = {}
+			for (let autocompleteOptionIndex in store.state.teams) {
+				data[store.state.teams[autocompleteOptionIndex]] = null
+			}
+			instance.updateData(data)
 		}
 	},
 	methods: {
@@ -299,16 +339,38 @@ Vue.component('navbar', {
 		}
 	},
 	mounted: function() {
+		var element = document.getElementById('team-search-input-field')
+
+		const data = {}
+		var instance = M.Autocomplete.init(element, {
+			data: data,
+			onAutocomplete: function(param) {
+				var selectedTeam
+				for (let index in store.state.teams) {
+					if (store.state.teams[index] === param) {
+						selectedTeam = index
+					}
+				}
+	
+				element.value = ""
+				element.blur()
+	
+				router.push('/team/'+selectedTeam)
+			}
+		})
+
+		element.onkeyup = function(e) {
+			if (e.code === "Escape") {
+				element.blur()
+			}
+		}
+
 		var elem = document.getElementById('team-dropdown-button');
 		const opts = {
 			constrainWidth: false,
 		}
 		var instance = M.Dropdown.init(elem, opts)
 	}
-})
-
-Vue.component('search-bar', {
-
 })
 
 /* VUE INSTANCE */
@@ -344,36 +406,6 @@ function updateContent() {
 */
 
 document.addEventListener('DOMContentLoaded', function() {
-	var element = document.getElementById('team-search-input-field')
-
-	const data = {}
-	for (let autocompleteOptionIndex in teams) {
-		data[teams[autocompleteOptionIndex]] = null
-	}
-
-	var instance = M.Autocomplete.init(element, {
-		data: data,
-		onAutocomplete: function(param) {
-			var selectedTeam
-			for (let index in teams) {
-				if (teams[index] === param) {
-					selectedTeam = index
-				}
-			}
-
-			element.value = ""
-			element.blur()
-
-			router.push('/team/'+selectedTeam)
-		}
-	})
-
-	element.onkeyup = function(e) {
-		if (e.code === "Escape") {
-			element.blur()
-		}
-	}
-
 	Chart.defaults.scale.gridLines.color = '#fafafa'
 	Chart.defaults.scale.gridLines.zeroLineColor = '#fafafa'
 	Chart.defaults.global.defaultFontColor = '#fafafa'

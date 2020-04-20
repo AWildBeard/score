@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html style="height: 100%">
+<html>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 <title>Wargamming Scoreboard</title>
-<body style="height: 100%">
-<div id="app" class="grey darken-3 white-text" style="height: 100%;">
+<body class="grey darken-3 white-text">
+<div id="app">
 	<navbar @team-search="showTeamSearch"></navbar>
 	<div class="container row">
 		<div id="searchPane" :class="searchFieldCSSClass" style="position: absolute;">
@@ -17,6 +17,7 @@
 </div>
 <script src="js/chart.js"></script>
 <script src="js/vue.js"></script>
+<script src="js/vuex.js"></script>
 <script src="js/vue-router.js"></script>
 <link rel="stylesheet" href="css/materialize.min.css">
 <script src="js/materialize.min.js"></script>

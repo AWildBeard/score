@@ -53,26 +53,25 @@ dirs: www/ www/css/ www/js/ www/icons/
 	mkdir -p www/icons/
 
 css: www/css/materialize.css www/css/materialize.min.css
-
 %.css:
 	@printf "${GREEN}${HEADER}Extracting materialize css sources${RESET}\n"
 	curl -LO https://github.com/Dogfalo/materialize/releases/download/1.0.0/materialize-v1.0.0.zip
 	unzip -p materialize-v1.0.0.zip materialize/css/materialize.css >www/css/materialize.css
 	unzip -p materialize-v1.0.0.zip materialize/css/materialize.min.css >www/css/materialize.min.css
 
-js: www/js/vue.js www/js/vue.min.js www/js/vue-router.js www/js/vue-router.min.js www/js/chart.js www/js/chart.min.js www/js/materialize.js www/js/materialize.min.js
-
+js: www/js/vue.js www/js/vue.min.js www/js/vuex.js www/js/vuex.min.js www/js/vue-router.js www/js/vue-router.min.js www/js/chart.js www/js/chart.min.js www/js/materialize.js www/js/materialize.min.js
 %.js:
-	@printf "${GREEN}${HEADER}Downloading vue javascript sources${RESET}\n"
+	@printf "${GREEN}${HEADER}Downloading Vue javascript sources${RESET}\n"
 	curl -Lo www/js/vue.js https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.js
 	curl -Lo www/js/vue.min.js  https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.min.js
 	curl -Lo www/js/vue-router.js https://cdn.jsdelivr.net/npm/vue-router@3.1.6/dist/vue-router.js
 	curl -Lo www/js/vue-router.min.js https://cdn.jsdelivr.net/npm/vue-router@3.1.6/dist/vue-router.min.js
-
+	@printf "${GREEN}${HEADER}Downloading VueX javascript sources"
+	curl -Lo www/js/vuex.js https://unpkg.com/vuex@3.2.0/dist/vuex.js
+	curl -Lo www/js/vuex.min.js https://unpkg.com/vuex@3.2.0/dist/vuex.min.js
 	@printf "${GREEN}${HEADER}Downloading Chart javascript sources${RESET}\n"
 	curl -Lo www/js/chart.js https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.js
 	curl -Lo www/js/chart.min.js https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.css
-
 	@printf "${GREEN}${HEADER}Downloading materialize javascript sources${RESET}\n"
 	curl -LO https://github.com/Dogfalo/materialize/releases/download/1.0.0/materialize-v1.0.0.zip
 	unzip -p materialize-v1.0.0.zip materialize/js/materialize.js >www/js/materialize.js
